@@ -7,6 +7,9 @@ app.use(express.json())
 const cors = require('cors')
 app.use(cors())
 
+app.use(express.static('dist'))
+
+
 morgan.token('reqbody', function getResBody(req) {
     if (req.method === "POST") {
         return JSON.stringify(req.body)
