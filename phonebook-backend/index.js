@@ -1,6 +1,7 @@
 const express = require("express")
 
 const app = express();
+app.use(express.json())
 
 let persons = [
     {
@@ -54,6 +55,23 @@ app.delete("/api/persons/:id", (req, res) => {
     persons = persons.filter(person => person.id !== id)
 
     res.status(204).end()
+})
+
+app.post('/api/persons', (request, response) => {
+    if (!request.body.name || !request.body.number) {
+        return response.status(400).json({ 
+          error: 'name or number missing' 
+        })
+    }
+
+    const newId = Math.floor(Math.random()*10000000);
+  
+    const person = request.body
+    person.id = newId
+  
+    persons = persons.concat(person)
+  
+    response.json(person)
 })
 
 
