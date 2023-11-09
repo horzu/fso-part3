@@ -100,20 +100,20 @@ app.delete("/api/persons/:id", (req, res) => {
 app.post('/api/persons', (request, response) => {
     const body = request.body;
 
-    if (!body.name || !body.number) {
-        return response.status(400).json({
-            error: 'name or number missing'
-        })
-    }
-    if (persons.find(item => item.name === request.body.name)) {
-        return response.status(400).json({
-            error: 'name must be unique'
-        })
-    }
+    // if (!body.name || !body.number) {
+    //     return response.status(400).json({
+    //         error: 'name or number missing'
+    //     })
+    // }
+    // if (persons.find(item => item.name === request.body.name)) {
+    //     return response.status(400).json({
+    //         error: 'name must be unique'
+    //     })
+    // }
 
     const entry = new Entry({
         name: body.name,
-        number: body.number
+        phoneNumber: body.number
     })
 
     entry.save().then(savedEntry => {
