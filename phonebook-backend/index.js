@@ -1,5 +1,31 @@
+require('dotenv').config();
 const express = require("express")
 var morgan = require('morgan')
+
+const Entry = require('./models/persons')
+
+// const mongoose = require("mongoose")
+// const password = process.env.MONGO_PASSWORD;
+
+// const url = `mongodb+srv://mertsakar:${password}@noteapp.l6nhprm.mongodb.net/PhoneApp?retryWrites=true&w=majority`
+
+// mongoose.set("strictQuery")
+// mongoose.connect(url)
+
+// const entrySchema = new mongoose.Schema({
+//     name: String,
+//     phoneNumber: Number
+// })
+
+// entrySchema.set('toJSON', {
+//     transform: (document, returnedObject) => {
+//       returnedObject.id = returnedObject._id.toString()
+//       delete returnedObject._id
+//       delete returnedObject.__v
+//     }
+//   })
+
+// const Entry = mongoose.model("Entry", entrySchema)
 
 const app = express();
 app.use(express.json())
@@ -45,7 +71,9 @@ let persons = [
 ]
 
 app.get("/api/persons", (req, res) => {
-    res.json(persons)
+    Entry.find({}).then(entries => {
+        res.json(entries)
+    })
 })
 
 app.get("/info", (req, res) => {
@@ -56,15 +84,9 @@ app.get("/info", (req, res) => {
 })
 
 app.get("/api/persons/:id", (req, res) => {
-    const id = Number(req.params.id)
-
-    const person = persons.find(person => person.id === id)
-
-    if (person) {
-        res.json(person)
-    } else {
-        res.status(404).end()
-    }
+    Entry.findById(req.params.id).then(entry => {
+        res.json(entry)
+      })
 })
 
 app.delete("/api/persons/:id", (req, res) => {
@@ -76,7 +98,9 @@ app.delete("/api/persons/:id", (req, res) => {
 })
 
 app.post('/api/persons', (request, response) => {
-    if (!request.body.name || !request.body.number) {
+    const body = request.body;
+
+    if (!body.name || !body.number) {
         return response.status(400).json({
             error: 'name or number missing'
         })
@@ -87,19 +111,19 @@ app.post('/api/persons', (request, response) => {
         })
     }
 
-    const newId = Math.floor(Math.random() * 10000000);
+    const entry = new Entry({
+        name: body.name,
+        number: body.number
+    })
 
-    const person = request.body
-    person.id = newId
-
-    persons = persons.concat(person)
-
-    response.json(person)
+    entry.save().then(savedEntry => {
+        response.json(savedEntry)
+    })
 })
 
 
-const port = process.env.port || 3001;
+const PORT = process.env.PORT || 3001;
 
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`)
+app.listen(PORT, () => {
+    console.log(`Server is running on PORT ${PORT}`)
 })
