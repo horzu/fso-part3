@@ -1,40 +1,25 @@
 require('dotenv').config();
 const express = require("express")
 var morgan = require('morgan')
-
-const Entry = require('./models/persons')
-
-// const mongoose = require("mongoose")
-// const password = process.env.MONGO_PASSWORD;
-
-// const url = `mongodb+srv://mertsakar:${password}@noteapp.l6nhprm.mongodb.net/PhoneApp?retryWrites=true&w=majority`
-
-// mongoose.set("strictQuery")
-// mongoose.connect(url)
-
-// const entrySchema = new mongoose.Schema({
-//     name: String,
-//     phoneNumber: Number
-// })
-
-// entrySchema.set('toJSON', {
-//     transform: (document, returnedObject) => {
-//       returnedObject.id = returnedObject._id.toString()
-//       delete returnedObject._id
-//       delete returnedObject.__v
-//     }
-//   })
-
-// const Entry = mongoose.model("Entry", entrySchema)
-
-const app = express();
-app.use(express.json())
-
 const cors = require('cors')
-app.use(cors())
+const Entry = require('./models/persons')
+const app = express();
+
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+
+    if (error.name === 'CastError') {
+        return response.status(400).send({ error: 'malformatted id' })
+    }
+
+    next(error)
+}
 
 app.use(express.static('dist'))
-
+app.use(express.json())
+app.use(cors())
+app.use(morgan(':method :url :status :res[content-length] :response-time :reqbody'))
+app.use(errorHandler) // this has to be the last loaded middleware.
 
 morgan.token('reqbody', function getResBody(req) {
     if (req.method === "POST") {
@@ -44,32 +29,6 @@ morgan.token('reqbody', function getResBody(req) {
     }
 })
 
-app.use(morgan(':method :url :status :res[content-length] :response-time :reqbody'))
-
-
-let persons = [
-    {
-        "id": 1,
-        "name": "Arto Hellas",
-        "number": "040-123456"
-    },
-    {
-        "id": 2,
-        "name": "Ada Lovelace",
-        "number": "39-44-5323523"
-    },
-    {
-        "id": 3,
-        "name": "Dan Abramov",
-        "number": "12-43-234345"
-    },
-    {
-        "id": 4,
-        "name": "Mary Poppendieck",
-        "number": "39-23-6423122"
-    }
-]
-
 app.get("/api/persons", (req, res) => {
     Entry.find({}).then(entries => {
         res.json(entries)
@@ -77,24 +36,46 @@ app.get("/api/persons", (req, res) => {
 })
 
 app.get("/info", (req, res) => {
-    const count = persons.length;
-    const timestamp = new Date();
+    Entry.find({}).then(entries => {
+        const count = entries.length;
+        const timestamp = new Date();
 
-    res.send(`<p>Phonebook has info for ${count} people</p><p>${timestamp}</p>`)
+        res.send(`<p>Phonebook has info for ${count} people</p><p>${timestamp}</p>`)
+    })
 })
 
-app.get("/api/persons/:id", (req, res) => {
-    Entry.findById(req.params.id).then(entry => {
-        res.json(entry)
-      })
+app.get("/api/persons/:id", (request, response, next) => {
+    Entry.findById(request.params.id).then(entry => {
+        if (entry) {
+            response.json(entry)
+        } else {
+            response.status(404).end()
+        }
+    })
+        .catch(error => next(error))
 })
 
-app.delete("/api/persons/:id", (req, res) => {
-    const id = Number(req.params.id)
+app.delete("/api/persons/:id", (request, response, next) => {
+    Entry.findByIdAndDelete(request.params.id)
+        .then(result => {
+            response.status(204).end()
+        })
+        .catch(error => next(error))
+})
 
-    persons = persons.filter(person => person.id !== id)
+app.put('/api/persons/:id', (request, response, next) => {
+    const body = request.body
 
-    res.status(204).end()
+    const entry = {
+        name: body.name,
+        phoneNumver: body.number,
+    }
+
+    Entry.findByIdAndUpdate(request.params.id, entry, { new: true })
+        .then(updatedEntry => {
+            response.json(updatedEntry)
+        })
+        .catch(error => next(error))
 })
 
 app.post('/api/persons', (request, response) => {
