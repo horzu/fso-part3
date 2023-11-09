@@ -17,7 +17,7 @@ mongoose.connect(url)
 const entrySchema = new mongoose.Schema({
     name: {
         type: String,
-        minLength: 5,
+        minLength: 3,
         required: true
     }, 
     phoneNumber: Number,
